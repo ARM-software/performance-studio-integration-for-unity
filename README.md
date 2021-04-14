@@ -15,7 +15,7 @@ Most files in this library are licensed under the BSD-3 Clause License,
 provided in [LICENSE.md](LICENSE.md).
 
 The Unity native plugin interface header, `IUnityInterface.h`, is licensed
-under the Unity Companion License license, provided in
+under the Unity Companion License, provided in
 [LICENSE_UNITY.md](LICENSE_UNITY.md).
 
 Technical details
