@@ -37,7 +37,7 @@ This package is built using the Unity bee compiler.
    `\Editor\Data\PlaybackEngines\AndroidPlayer\NDK`
 2) Locate the bee compiler in your Unity install. It is usually found in:
    `\Editor\Data\il2cpp\build\BeeSettings\offline\bee.exe`
-3) To trigger a build, run `bee.exe` in the Native~ directory.
+3) To trigger a build, run `bee.exe` in the `Native~` directory.
 
 Installing and using
 --------------------
