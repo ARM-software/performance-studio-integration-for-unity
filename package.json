@@ -1,6 +1,6 @@
 {
     "name": "com.arm.mobile-studio",
-    "description": "Unity Bindings for Mobile Studio.",
+    "description": "Unity C# bindings for Mobile Studio.",
     "version": "1.0.0",
     "unity": "2018.4",
     "displayName": "Mobile Studio"

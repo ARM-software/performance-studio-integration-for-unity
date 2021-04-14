@@ -1,7 +1,12 @@
 Mobile Studio Package
 ======================
 
-Unity Bindings for Mobile Studio.
+This project is a Unity package for integrating the Mobile Studio tool suite
+into game development workflows. This version of the package has the following
+features for integrating with the Streamline profiler.
+
+* C# language bindings for emiting event annotations.
+* C# language bindings for emiting software counters.
 
 License
 =======
