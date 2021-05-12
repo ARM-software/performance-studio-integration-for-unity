@@ -90,7 +90,7 @@ it.
 
 To create a CAM:
 
-    gameCAM = new MobileStudio.Annotations.CustomActivityMap("Game Activity");
+    gameCAM = new MobileStudio.Annotations.CAM("Game Activity");
 
 To add tracks to the CAM:
 
