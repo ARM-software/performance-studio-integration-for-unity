@@ -107,7 +107,7 @@ the job when you are done, like you did with Annotations:
 
     // ...do work...
 
-    job.end();
+    job.stop();
 
 The other method is to store the start and end times of your work, and then
 later add them to the track:
