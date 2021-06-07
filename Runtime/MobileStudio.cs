@@ -45,46 +45,75 @@ namespace MobileStudio
         // Maintain global UID for each Custom Activity Map.
         private static UInt32 globalCamView = 1;
 
-        // Global state as to whether annotatations are available for use.
+        // Global state as to whether annotations are available for use.
         private enum AnnotationState { Active, Inactive };
+
+        // Counter type
+        public enum CounterType { Absolute, Delta };
+
         private static AnnotationState state = getAnnotationState();
 
 #if UNITY_ANDROID && !UNITY_EDITOR
-            [DllImport("mobilestudio")]
-            private static extern void gator_annotate_setup();
+        [DllImport("mobilestudio")]
+        private static extern void gator_annotate_setup();
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_annotate_marker(string str);
+        [DllImport("mobilestudio")]
+        private static extern void gator_annotate_marker(
+            string str);
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_annotate_marker_color(UInt32 color, string str);
+        [DllImport("mobilestudio")]
+        private static extern void gator_annotate_marker_color(
+            UInt32 color, string str);
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_annotate_color(UInt32 channel, UInt32 color, string str);
+        [DllImport("mobilestudio")]
+        private static extern void gator_annotate_color(
+            UInt32 channel, UInt32 color, string str);
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_annotate_str(UInt32 channel, string str);
+        [DllImport("mobilestudio")]
+        private static extern void gator_annotate_str(
+            UInt32 channel, string str);
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_annotate_name_channel(UInt32 channel, UInt32 group, string str);
+        [DllImport("mobilestudio")]
+        private static extern void gator_annotate_name_channel(
+            UInt32 channel, UInt32 group, string str);
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_cam_view_name(UInt32 view_uid, string name);
+        [DllImport("mobilestudio")]
+        private static extern void gator_cam_view_name(
+            UInt32 view_uid, string name);
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_cam_track(UInt32 view_uid, UInt32 track_uid, UInt32 parent_track, string name);
+        [DllImport("mobilestudio")]
+        private static extern void gator_cam_track(
+            UInt32 view_uid, UInt32 track_uid, UInt32 parent_track, string name);
 
-            [DllImport("mobilestudio")]
-            private static extern UInt64 gator_get_time();
+        [DllImport("mobilestudio")]
+        private static extern UInt64 gator_get_time();
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_cam_job_start(UInt32 view_uid, UInt32 job_uid, string name, UInt32 track, UInt64 time, UInt32 color);
+        [DllImport("mobilestudio")]
+        private static extern void gator_cam_job_start(
+            UInt32 view_uid, UInt32 job_uid, string name, UInt32 track, UInt64 time, UInt32 color);
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_cam_job_stop(UInt32 view_uid, UInt32 job_uid, UInt64 time);
+        [DllImport("mobilestudio")]
+        private static extern void gator_cam_job_stop(
+            UInt32 view_uid, UInt32 job_uid, UInt64 time);
 
-            [DllImport("mobilestudio")]
-            private static extern void gator_cam_job(UInt32 view_uid, UInt32 job_uid, string name, UInt32 track, UInt64 startTime, UInt64 duration, UInt32 color, UInt32 primaryDependency, IntPtr dependencyCount, IntPtr dependencies);
+        [DllImport("mobilestudio")]
+        private static extern void gator_cam_job(
+            UInt32 view_uid, UInt32 job_uid, string name, UInt32 track, UInt64 startTime,
+            UInt64 duration, UInt32 color, UInt32 primaryDependency, IntPtr dependencyCount,
+            IntPtr dependencies);
+
+        [DllImport("mobilestudio")]
+        private static extern void gator_annotate_counter(
+            UInt32 counter_id, string title, string name, UInt32 per_cpu, UInt32 counter_class,
+            UInt32 display_class, string units, UInt32 modifier, UInt32 display_composition,
+            UInt32 display_renderer, UInt32 avg_selection, UInt32 avg_cores, UInt32 percentage,
+            IntPtr activity_count, IntPtr activity_names, IntPtr activity_colors, UInt32 cores,
+            UInt32 color, string description);
+
+        [DllImport("mobilestudio")]
+        private static extern void gator_annotate_counter_value(
+            UInt32 cpu, UInt32 counter_id, UInt32 value);
+
 #endif
 
         /*
@@ -104,7 +133,7 @@ namespace MobileStudio
 
         /*
          * Returns the active state if annotations are supported (we are running on Android
-         * and successfully initialised the library), inactive otherwise
+         * and successfully initialized the library), inactive otherwise
          */
         private static AnnotationState getAnnotationState()
         {
@@ -170,6 +199,71 @@ namespace MobileStudio
                 }
             #endif
             return 0;
+        }
+
+       /*
+         * Represents a single counter in the timeline.
+         */
+        public class Counter
+        {
+            // Maintain a unique ID for each counter.
+            static UInt32 counterCount = 0;
+
+            // The scaling modifier used to display series as float to 2dp.
+            const UInt32 modifier = 100;
+
+            // The counter classes used by Streamline's native interface.
+            const UInt32 CC_DELTA = 1;
+            const UInt32 CC_ABSOLUTE = 2;
+
+            // The display classes used by Streamline's native interface.
+            const UInt32 DC_ACCUMULATE = 2;
+            const UInt32 DC_MAXIMUM = 4;
+
+            // The renderer classes used by Streamline's native interface.
+            const UInt32 RC_OVERLAY = 2;
+            const UInt32 RC_LINE = 2;
+
+            // Our counter ID.
+            UInt32 counter;
+
+            /*
+             * Specify the counter chart title, series name, and value type.
+             */
+            public Counter(string title, string name, CounterType type)
+            {
+                counterCount++;
+                counter = counterCount;
+
+                #if UNITY_ANDROID && !UNITY_EDITOR
+                    if (state == AnnotationState.Active)
+                    {
+                        UInt32 counterClass = type == CounterType.Delta ? CC_DELTA : CC_ABSOLUTE;
+                        UInt32 displayClass = type == CounterType.Delta ? DC_ACCUMULATE : DC_MAXIMUM;
+
+                        gator_annotate_counter(
+                            counter, title, name, 0, counterClass, displayClass,
+                            null, modifier, RC_OVERLAY, RC_LINE, 0, 0, 0,
+                            IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0, 0, null);
+                    }
+                #endif
+            }
+
+            /*
+             * Update the counter value.
+             */
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            [Conditional("UNITY_ANDROID")]
+            public void set_value(float value)
+            {
+                #if UNITY_ANDROID && !UNITY_EDITOR
+                    if (state == AnnotationState.Active)
+                    {
+                        UInt32 ivalue = (UInt32)(value * (float)modifier);
+                        gator_annotate_counter_value(0, counter, ivalue);
+                    }
+                #endif
+            }
         }
 
         /*

@@ -80,6 +80,28 @@ Annotations can be inserted into a channel easily:
 
     channel.end();
 
+### Counters
+
+Counters are numerical data points that can be plotted as a chart in the
+Streamline timeline view. Counters can be created as either absolute counters,
+where every value is an absolute value, or as a delta counter, where values
+are the difference since the last value was emitted. All values are floats
+and will be presented to 2 decimal places.
+
+When charts are first defined the user can specify two strings, a title and
+series name. The title names the chart, the series names the series on the
+chart. Multiple series can use the same title name, which will mean that they
+will be plotted on the same chart in the Streamline timeline.
+
+To create a counter, e.g.:
+
+    counter = new MobileStudio.Annotations.Counter(
+        "Title", "Series", MobileStudio.Annotations.CounterType.Absolute);
+
+Counter values are set easily:
+
+    counter.set_value(42.2f);
+
 ### Custom Activity Maps
 
 Custom Activity Maps (CAMs) are a global (not per-thread) set of timelines.
