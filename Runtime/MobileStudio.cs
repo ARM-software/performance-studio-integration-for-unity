@@ -42,8 +42,7 @@ namespace MobileStudio
 {
     public class Annotations
     {
-        // Maintain global UID for each Custom Activity Map.
-        private static UInt32 globalCamView = 1;
+        private static readonly object _locker = new object();
 
         // Global state as to whether annotations are available for use.
         private enum AnnotationState { Active, Inactive };
@@ -232,8 +231,11 @@ namespace MobileStudio
              */
             public Counter(string title, string name, CounterType type)
             {
-                counterCount++;
-                counter = counterCount;
+                lock(_locker)
+                {
+                    counterCount++;
+                    counter = counterCount;
+                }
 
                 #if UNITY_ANDROID && !UNITY_EDITOR
                     if (state == AnnotationState.Active)
@@ -285,8 +287,11 @@ namespace MobileStudio
              */
             public Channel(string name)
             {
-                channelCount++;
-                channel = channelCount;
+                lock(_locker)
+                {
+                    channelCount++;
+                    channel = channelCount;
+                }
 
                 #if UNITY_ANDROID && !UNITY_EDITOR
                     if (state == AnnotationState.Active)
@@ -388,6 +393,10 @@ namespace MobileStudio
                 void stop();
             }
 
+
+            // Maintain a unique ID for each CAM.
+            private static UInt32 camCount = 1;
+
             private UInt32 trackCount;
             private UInt32 jobCount;
             private UInt32 viewUid;
@@ -402,8 +411,11 @@ namespace MobileStudio
                 this.trackCount = 0;
                 this.jobCount = 0;
 
-                // Each CAM needs a unuque ID.
-                this.viewUid = globalCamView++;
+                lock(_locker)
+                {
+                    // Each CAM needs a unique ID.
+                    this.viewUid = camCount++;
+                }
 
                 #if UNITY_ANDROID && !UNITY_EDITOR
                     if (state == AnnotationState.Active)
@@ -421,7 +433,12 @@ namespace MobileStudio
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public CAMTrack createTrack(string _name)
             {
-                return new CAMTrackImp(this, _name, ++trackCount);
+                CAMTrack newTrack;
+                lock(_locker)
+                {
+                    newTrack = new CAMTrackImp(this, _name, ++trackCount);
+                }
+                return newTrack;
             }
 
             /*
@@ -462,7 +479,12 @@ namespace MobileStudio
                 {
                     UInt32 intColor = colorToGatorInt(color);
 
-                    return new CAMJobImp(parent, trackUid, parent.jobCount++, _name, intColor);
+                    CAMJob newJob;
+                    lock(_locker)
+                    {
+                        newJob = new CAMJobImp(parent, trackUid, parent.jobCount++, _name, intColor);
+                    }
+                    return newJob;
                 }
 
                 /*
@@ -474,7 +496,11 @@ namespace MobileStudio
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public void registerJob(string name, Color32 color, UInt64 startTime, UInt64 stopTime)
                 {
-                    UInt32 jobUid = parent.jobCount++;
+                    UInt32 jobUid;
+                    lock (_locker)
+                    {
+                        jobUid = parent.jobCount++;
+                    }
 
                     #if UNITY_ANDROID && !UNITY_EDITOR
                         if (state == AnnotationState.Active)
