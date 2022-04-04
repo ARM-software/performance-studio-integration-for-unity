@@ -2,6 +2,6 @@
     "name": "com.arm.mobile-studio",
     "description": "Unity C# bindings for Mobile Studio.",
     "version": "1.0.0",
-    "unity": "2018.4",
+    "unity": "2020.3",
     "displayName": "Mobile Studio"
 }
