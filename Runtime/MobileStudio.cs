@@ -1,7 +1,7 @@
 ﻿/**
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 2021, Arm Limited
+ * Copyright (c) 2021-2022, Arm Limited
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,6 +51,8 @@ namespace MobileStudio
         public enum CounterType { Absolute, Delta };
 
         private static AnnotationState state = getAnnotationState();
+
+        internal static bool Active => state == AnnotationState.Active;
 
 #if UNITY_ANDROID && !UNITY_EDITOR
         [DllImport("mobilestudio")]

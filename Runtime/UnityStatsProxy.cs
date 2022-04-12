@@ -36,14 +36,20 @@
 #if UNITY_ANDROID && !UNITY_EDITOR
 
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.LowLevel;
+using UnityEngine.Scripting;
+
+[assembly: AlwaysLinkAssembly]
 
 namespace MobileStudio
 {
-    class UnityStatsProxyScript : MonoBehaviour
+    class UnityStatsProxy
     {
+        static UnityStatsProxy Instance { get; set; }
+
         struct CounterObjectPair
         {
             public CounterObjectPair(Annotations.Counter mobileStudioCounter, ProfilerRecorder unityCounter, bool convertToMiB)
@@ -97,15 +103,85 @@ namespace MobileStudio
         };
 
         [RuntimeInitializeOnLoadMethod]
-        [Conditional("UNITY_ANDROID")]
-        static void OnRuntimeMethodLoad()
+        [Preserve]
+        static void InitializeUnityStatsProxy()
         {
-            // Add a support object for counters synchronisation
-            var go = new GameObject("MobileStudioUnityStatsProxy", typeof(UnityStatsProxyScript));
-            DontDestroyOnLoad(go);
+            if (Instance == null && Annotations.Active)
+            {
+                Instance = new UnityStatsProxy();
+            }
         }
 
-        void Awake()
+        UnityStatsProxy()
+        {
+            if (!InstallUpdateCallback())
+            {
+                UnityEngine.Debug.LogError("UnityStatsProxy: Failed to inject Playerloop callback!");
+                return;
+            }
+
+            InitializeCounters();
+        }
+
+        ~UnityStatsProxy()
+        {
+            // Cleanup Unity counters
+            DisposeCounters();
+        }
+
+        bool InstallUpdateCallback()
+        {
+            var root = PlayerLoop.GetCurrentPlayerLoop();
+            var injectionPoint = typeof(UnityEngine.PlayerLoop.PreLateUpdate);
+            var result = InjectPlayerLoopCallback(ref root, injectionPoint, Update);
+            PlayerLoop.SetPlayerLoop(root);
+            return result;
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        delegate uint PlayerLoopDelegate();
+
+        static bool InjectPlayerLoopCallback(ref PlayerLoopSystem system, System.Type injectedSystem, PlayerLoopSystem.UpdateFunction injectedFnc)
+        {
+            // Have we found the system we're looking for?
+            if (system.type == injectedSystem)
+            {
+                // If system has updateFunction set, updateDelegate won't be called
+                // We wrap native update function in something we can call in c#
+                // Reset updateFunction and call wrapped updateFunction in our delegate
+                PlayerLoopDelegate systemDelegate = null;
+                if (system.updateFunction.ToInt64() != 0)
+                {
+                    var intPtr = Marshal.ReadIntPtr(system.updateFunction);
+                    if (intPtr.ToInt64() != 0)
+                        systemDelegate = (PlayerLoopDelegate)Marshal.GetDelegateForFunctionPointer(intPtr, typeof(PlayerLoopDelegate));
+                }
+
+                // Install the new delegate and keep the system function call
+                system.updateDelegate = () => { injectedFnc(); if (systemDelegate != null) _ = systemDelegate(); };
+                system.updateFunction = new System.IntPtr(0);
+
+                return true;
+            }
+
+            if (system.subSystemList == null)
+            {
+                return false;
+            }
+
+            // Iterate all subsystems
+            for (int i = 0; i < system.subSystemList.Length; ++i)
+            {
+                if (InjectPlayerLoopCallback(ref system.subSystemList[i], injectedSystem, injectedFnc))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void InitializeCounters()
         {
             // Map Unity counters to Mobile Studio
             counters = new List<CounterObjectPair>();
@@ -123,13 +199,19 @@ namespace MobileStudio
             }
         }
 
-        void OnDestroy()
+        void DisposeCounters()
         {
-            // Cleanup Unity counters
+            if (counters == null)
+            {
+                return;
+            }
+
             for (var i = 0; i < counters.Count; ++i)
             {
                 counters[i].unityCounter.Dispose();
             }
+
+            counters = null;
         }
 
         void Update()
