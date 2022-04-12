@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 2021, Arm Limited
+ * Copyright (c) 2021-2022, Arm Limited
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@ enum log_levels {
 #define LOG_TAG "AnnotationLog"
 
 #define LOGGING(LOG_LEVEL, fmt, ...)                                                                                   \
-    __android_log_print(LOG_LEVEL, LOG_TAG, "%s/%s:%d " fmt, __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
+    __android_log_print(LOG_LEVEL, LOG_TAG, "%s:%d " fmt, __FUNCTION__, __LINE__, ##__VA_ARGS__);
 
 /* LINUX IMPLEMENTATION */
 #elif defined(linux) || defined(__linux) || defined(__linux__)
@@ -71,7 +71,7 @@ char *log_levels[] = { "UNKNOWN",
                        "SILENT"};
 // clang-format on
 #define LOGGING(LOG_LEVEL, fmt, ...)                                                                                   \
-    printf("%s/%s:%d [%s] " fmt " \n", __FILE__, __func__, __LINE__, log_levels[LOG_LEVEL], ##__VA_ARGS__);
+    printf("%s:%d [%s] " fmt " \n", __func__, __LINE__, log_levels[LOG_LEVEL], ##__VA_ARGS__);
 
 #endif
 //Use to do logging, if not needed un-define this variable
