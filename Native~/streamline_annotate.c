@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 2014-2021, Arm Limited
+ * Copyright (c) 2014-2022, Arm Limited
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -501,12 +501,10 @@ static void* gator_func(void *arg)
             } else {
                 gator_stop_capturing();
                 if (print) {
-                    LOG(LOG_ERROR,
-                        "Warning : Not connected to gatord, "                                             //
-                        "the application will run normally but Streamline will not collect annotations. " //
-                        "To collect annotations, please verify you are running gatord 5.%i or later and that SELinux " //
-                        "is disabled.\n", //
-                        gator_minimum_version);
+                    LOG(LOG_WARN,
+                        "Warning : Not connected to gatord. The application will run " //
+                        "normally but Streamline will not collect annotations.");
+                    print = false;
                 }
                 sleep(1);
                 continue;
@@ -560,7 +558,7 @@ static void* gator_func(void *arg)
                         if (!gator_send(thread, write_pos)) {
                             LOG(LOG_ERROR,
                                 "Failed to send bytes, "                                                    //
-                                "gator_thread = (exited:%s, fd:%d, oob_length:%ld, read_pos:%d,  tid:%d), " //
+                                "gator_thread = (exited:%s, fd:%d, oob_length:%zd, read_pos:%d,  tid:%d), " //
                                 "write_pos = %u",                                                           //
                                 thread->exited ? "true" : "false",
                                 thread->fd,
