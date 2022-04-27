@@ -154,7 +154,9 @@ namespace MobileStudio
                 {
                     var intPtr = Marshal.ReadIntPtr(system.updateFunction);
                     if (intPtr.ToInt64() != 0)
+                    {
                         systemDelegate = (PlayerLoopDelegate)Marshal.GetDelegateForFunctionPointer(intPtr, typeof(PlayerLoopDelegate));
+                    }
                 }
 
                 // Install the new delegate and keep the system function call
