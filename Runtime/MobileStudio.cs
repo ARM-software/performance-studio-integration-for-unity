@@ -1,7 +1,7 @@
 ﻿/**
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 2021, Arm Limited
+ * Copyright (c) 2021-2022, Arm Limited
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -51,6 +51,8 @@ namespace MobileStudio
         public enum CounterType { Absolute, Delta };
 
         private static AnnotationState state = getAnnotationState();
+
+        internal static bool Active => state == AnnotationState.Active;
 
 #if UNITY_ANDROID && !UNITY_EDITOR
         [DllImport("mobilestudio")]
@@ -229,7 +231,7 @@ namespace MobileStudio
             /*
              * Specify the counter chart title, series name, and value type.
              */
-            public Counter(string title, string name, CounterType type)
+            public Counter(string title, string name, CounterType type, string unit = null)
             {
                 lock(_locker)
                 {
@@ -245,7 +247,7 @@ namespace MobileStudio
 
                         gator_annotate_counter(
                             counter, title, name, 0, counterClass, displayClass,
-                            null, modifier, RC_OVERLAY, RC_LINE, 0, 0, 0,
+                            unit, modifier, RC_OVERLAY, RC_LINE, 0, 0, 0,
                             IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0, 0, null);
                     }
                 #endif
