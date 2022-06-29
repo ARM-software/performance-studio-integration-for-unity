@@ -125,9 +125,9 @@ namespace MobileStudio
         private static UInt32 colorToGatorInt(Color32 color)
         {
             UInt32 colorInt = ((uint)(color.b) << 24) +
-                             ((uint)(color.g) << 16) +
-                             ((uint)(color.r) << 8) +
-                             ((uint)0x1b);
+                              ((uint)(color.g) << 16) +
+                              ((uint)(color.r) <<  8) +
+                              ((uint)0x1b);
 
             return colorInt;
         }
@@ -208,7 +208,9 @@ namespace MobileStudio
         public class Counter
         {
             // Maintain a unique ID for each counter.
-            static UInt32 counterCount = 0;
+            // Allocate in a namespace block starting from 16384 to reduce
+            // chances of collisions with other users of annotations.
+            static UInt32 counterCount = 0x4000;
 
             // The scaling modifier used to display series as float to 2dp.
             const UInt32 modifier = 100;
@@ -278,7 +280,9 @@ namespace MobileStudio
         public class Channel
         {
             // Maintain a unique ID for each channel.
-            static UInt32 channelCount = 0;
+            // Allocate in a namespace block starting from 16384 to reduce
+            // chances of collisions with other users of annotations.
+            static UInt32 channelCount = 0x4000;
 
             // Our channel ID.
             UInt32 channel;
@@ -397,7 +401,9 @@ namespace MobileStudio
 
 
             // Maintain a unique ID for each CAM.
-            private static UInt32 camCount = 1;
+            // Allocate in a namespace block starting from 16384 to reduce
+            // chances of collisions with other users of annotations.
+            private static UInt32 camCount = 0x4000;
 
             private UInt32 trackCount;
             private UInt32 jobCount;
