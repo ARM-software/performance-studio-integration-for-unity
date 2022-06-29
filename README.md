@@ -42,10 +42,9 @@ This package is built using the Unity bee compiler.
 Compatibility
 -------------
 
-This package uses Streamline application annotations to add more context to
-captured data. It allocates Streamline annotation handles in the range
-16384-32767; other users of Streamline annotations should avoid using this
-range to avoid collisions.
+This package uses application-generated Streamline annotations to add more
+context to captured data. It allocates annotation handles in the ID range 16384-32767; other users of Streamline in the same process should avoid using
+this range to avoid collisions.
 
 Installing and using
 --------------------
