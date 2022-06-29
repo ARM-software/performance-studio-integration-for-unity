@@ -5,8 +5,8 @@ This project is a Unity package for integrating the Mobile Studio tool suite
 into game development workflows. This version of the package has the following
 features for integrating with the Streamline profiler.
 
-* C# language bindings for emiting event annotations.
-* C# language bindings for emiting software counters.
+* C# language bindings for emitting event annotations.
+* C# language bindings for emitting software counters.
 
 License
 =======
@@ -24,7 +24,7 @@ Technical details
 Requirements
 ------------
 
-This version of the package is compatible with the Unity Editor version 2018.4
+This version of the package is compatible with the Unity Editor version 2020.3
 LTS and later.
 
 Building
@@ -39,8 +39,18 @@ This package is built using the Unity bee compiler.
    `\Editor\Data\il2cpp\build\BeeSettings\offline\bee.exe`
 3) To trigger a build, run `bee.exe` in the `Native~` directory.
 
+Compatibility
+-------------
+
+This package uses application-generated Streamline annotations to add more
+context to captured data. It allocates annotation handles in the ID range 16384-32767; other users of Streamline in the same process should avoid using
+this range to avoid collisions.
+
 Installing and using
 --------------------
 
 For instructions on how to install and use this package, see the
 [full documentation page](Documentation/Mobile-Studio.md).
+
+
+
