@@ -113,7 +113,7 @@ namespace MobileStudio
 
         [DllImport("mobilestudio")]
         private static extern void gator_annotate_counter_value(
-            UInt32 cpu, UInt32 counter_id, UInt32 value);
+            UInt32 cpu, UInt32 counter_id, Int64 value);
 
 #endif
 
@@ -265,7 +265,7 @@ namespace MobileStudio
                 #if UNITY_ANDROID && !UNITY_EDITOR
                     if (state == AnnotationState.Active)
                     {
-                        UInt32 ivalue = (UInt32)(value * (float)modifier);
+                        Int64 ivalue = (Int64)(value * (float)modifier);
                         gator_annotate_counter_value(0, counter, ivalue);
                     }
                 #endif
