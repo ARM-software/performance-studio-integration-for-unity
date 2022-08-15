@@ -1063,14 +1063,14 @@ free_counter:
     return;
 }
 
-void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API gator_annotate_counter_value(const uint32_t core, const uint32_t id, const uint32_t value)
+void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API gator_annotate_counter_value(const uint32_t core, const uint32_t id, const int64_t value)
 {
     struct gator_thread *const thread = gator_get_thread();
     if (thread == NULL) {
         return;
     }
 
-    gator_buf_wait_bytes(thread, 1 + sizeof(uint32_t) + MAXSIZE_PACK_LONG + 3*MAXSIZE_PACK_INT);
+    gator_buf_wait_bytes(thread, 1 + sizeof(uint32_t) + 2 * MAXSIZE_PACK_LONG + 2 * MAXSIZE_PACK_INT);
 
     uint32_t write_pos;
     uint32_t size_pos;
@@ -1080,7 +1080,7 @@ void UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API gator_annotate_counter_value(con
     length += gator_buf_write_time(thread->buf, &write_pos);
     length += gator_buf_write_int(thread->buf, &write_pos, core);
     length += gator_buf_write_int(thread->buf, &write_pos, id);
-    length += gator_buf_write_int(thread->buf, &write_pos, value);
+    length += gator_buf_write_long(thread->buf, &write_pos, value);
 
     gator_msg_end(thread, write_pos, size_pos, length);
 }
