@@ -377,6 +377,14 @@ namespace MobileStudio
              */
             public interface CAMTrack
             {
+
+                /*
+                * Creates a track with the specified name and parent. This can then be used
+                * to register Jobs. Each Track appears as a named row in the
+                * parent CAM.
+                */
+                public CAMTrack createTrack(string _name);
+
                 /*
                  * Creates a CAMJob object, which will mark itself as starting
                  * immediately. Mark completion with a call to stop() on the
@@ -460,22 +468,6 @@ namespace MobileStudio
             }
 
             /*
-             * Creates a track with the specified name and parent. This can then be used
-             * to register Jobs. Each Track appears as a named row in the
-             * parent CAM.
-             */
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public CAMTrack createTrack(CAMTrack parent, string _name)
-            {
-                CAMTrack newTrack;
-                lock(_locker)
-                {
-                    newTrack = new CAMTrackImp(this, parent, _name, ++trackCount);
-                }
-                return newTrack;
-            }
-
-            /*
              * Private implementation of the CAMTrack.
              */
             private class CAMTrackImp : CAMTrack
@@ -517,6 +509,24 @@ namespace MobileStudio
                         }
                     #endif
                 }
+
+
+                /*
+                * Creates a track with the specified name and parent. This can then be used
+                * to register Jobs. Each Track appears as a named row in the
+                * parent CAM.
+                */
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public CAMTrack createTrack(string _name)
+                {
+                    CAMTrack newTrack;
+                    lock(_locker)
+                    {
+                        newTrack = new CAMTrackImp(this.view, this, _name, ++trackCount);
+                    }
+                    return newTrack;
+                }
+
 
                 /*
                  * Creates a CAMJob object, which will mark itself as starting
