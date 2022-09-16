@@ -65,13 +65,6 @@ namespace MobileStudio
         }
         List<CounterObjectPair> counters;
 
-
-        // TODO: Remove this it's just for testing
-        Annotations.CAM cam;
-        Annotations.CAMTrack track1;
-        Annotations.CAMTrack track2;
-
-
         struct CounterMapping
         {
             public CounterMapping(string mobileStudioTitle, string mobileStudioCounterName, string mobileStudioCounterUnit, string unityCounterName)
@@ -206,23 +199,6 @@ namespace MobileStudio
                 var mobileStudioCounter = new Annotations.Counter(mobileStudioDefaultCounters[i].mobileStudioTitle, mobileStudioDefaultCounters[i].mobileStudioCounterName, Annotations.CounterType.Absolute, mobileStudioDefaultCounters[i].mobileStudioCounterUnit);
                 counters.Add(new CounterObjectPair(mobileStudioCounter, recorder, mobileStudioDefaultCounters[i].mobileStudioCounterUnit == unitBytes));
             }
-
-            // Testing ...
-            cam = new Annotations.CAM("Unity Binding CAM");
-            track1 = cam.createTrack("UBC Track 1");
-            track2 = track1.createTrack("UBC Track 2");
-
-            var job1 = track1.makeJob("T1 J1", Color.green);
-            Thread.Sleep(5);
-            job1.stop();
-            Thread.Sleep(5);
-
-            var job2 = track2.makeJob("T2 J1", Color.blue);
-            Thread.Sleep(5);
-            job1.stop();
-            Thread.Sleep(5);
-
-            job2.set_dependency(job1);
         }
 
         void DisposeCounters()
