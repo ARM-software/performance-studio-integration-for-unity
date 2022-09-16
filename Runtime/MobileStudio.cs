@@ -98,6 +98,11 @@ namespace MobileStudio
             UInt32 view_uid, UInt32 job_uid, UInt64 time);
 
         [DllImport("mobilestudio")]
+        private static extern void gator_cam_job_set_dependencies(
+            UInt32 view_uid, UInt32 job_uid, UInt64 time,
+            UInt32 primary_dependency, IntPtr dependency_count, IntPtr dependencies);
+
+        [DllImport("mobilestudio")]
         private static extern void gator_cam_job(
             UInt32 view_uid, UInt32 job_uid, string name, UInt32 track, UInt64 startTime,
             UInt64 duration, UInt32 color, UInt32 primaryDependency, IntPtr dependencyCount,
@@ -327,7 +332,7 @@ namespace MobileStudio
             }
 
             /*
-             * As above, but with a specific colour.
+             * As above, but with a specific color.
              */
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [Conditional("UNITY_ANDROID")]
@@ -397,6 +402,11 @@ namespace MobileStudio
                  * Registers that a job has completed at this point in time.
                  */
                 void stop();
+
+                /*
+                 * Registers another job as a producer, the output of which is consumed by this job.
+                 */
+                void set_dependency(CAMJob producer);
             }
 
 
@@ -450,29 +460,60 @@ namespace MobileStudio
             }
 
             /*
+             * Creates a track with the specified name and parent. This can then be used
+             * to register Jobs. Each Track appears as a named row in the
+             * parent CAM.
+             */
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public CAMTrack createTrack(CAMTrack parent, string _name)
+            {
+                CAMTrack newTrack;
+                lock(_locker)
+                {
+                    newTrack = new CAMTrackImp(this, parent, _name, ++trackCount);
+                }
+                return newTrack;
+            }
+
+            /*
              * Private implementation of the CAMTrack.
              */
             private class CAMTrackImp : CAMTrack
             {
-                // Parent CAM - needed because Jobs must reference the CAM ID.
-                private CAM parent;
+                // Parent CAM view - needed because Jobs must reference the CAM ID.
+                private CAM view;
 
                 // Maintain unique UIDs for each Track.
                 private UInt32 trackUid;
 
                 /*
-                 * Each Track just needs a name - the rest is maintained
-                 * automatically by the parent CAM.
+                 * Create a track with the root view as the parent.
                  */
-                public CAMTrackImp(CAM parent, String name, UInt32 trackUid)
+                public CAMTrackImp(CAM view, String name, UInt32 trackUid)
                 {
-                    this.parent = parent;
+                    this.view = view;
                     this.trackUid = trackUid;
 
                     #if UNITY_ANDROID && !UNITY_EDITOR
                         if (state == AnnotationState.Active)
                         {
-                            gator_cam_track(parent.viewUid, this.trackUid, 0xffffffff, name);
+                            gator_cam_track(view.viewUid, this.trackUid, 0xffffffff, name);
+                        }
+                    #endif
+                }
+
+                 /*
+                 * Create a track with another track as the parent.
+                 */
+                public CAMTrackImp(CAM view, CAMTrack parent, String name, UInt32 trackUid)
+                {
+                    this.view = view;
+                    this.trackUid = trackUid;
+
+                    #if UNITY_ANDROID && !UNITY_EDITOR
+                        if (state == AnnotationState.Active)
+                        {
+                            gator_cam_track(view.viewUid, this.trackUid, parent.trackUid, name);
                         }
                     #endif
                 }
@@ -547,6 +588,22 @@ namespace MobileStudio
                         {
                             UInt64 startTime = gator_get_time();
                             gator_cam_job_start(this.viewUid, this.jobUid, name, this.trackUid, startTime, color);
+                        }
+                    #endif
+                }
+
+                /*
+                 * Set up a dependency between two jobs.
+                 */
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                public void set_dependency(CAMJob dependency)
+                {
+                    #if UNITY_ANDROID && !UNITY_EDITOR
+                        if (state == AnnotationState.Active)
+                        {
+                            UInt64 depTime = gator_get_time();
+                            UInt32[] deps = new UInt32[1] { dependency.jobUid };
+                            gator_cam_job_set_dependencies(this.viewUid, this.jobUid, depTime, 0, 1, (IntPtr)deps);
                         }
                     #endif
                 }
