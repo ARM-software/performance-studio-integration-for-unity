@@ -141,6 +141,7 @@ namespace MobileStudio
          * Returns the active state if annotations are supported (we are running on Android
          * and successfully initialized the library), inactive otherwise
          */
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static AnnotationState getAnnotationState()
         {
             #if UNITY_ANDROID && !UNITY_EDITOR
