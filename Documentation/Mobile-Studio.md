@@ -4,13 +4,14 @@ Unity Bindings for Mobile Studio
 Introduction
 ------------
 
-This package contains the C# bindings for Mobile Studio's Streamline component.
+This package contains C# bindings needed to export application-generated
+counters and event annotations to the Mobile Studio Streamline profiler.
 
-Mobile Studio includes a component called Streamline, which can collect and
-present hardware performance counters from Android devices. Streamline has an
-*annotations* feature, which allows the application being profiled to emit
-additional information that Streamline displays with the captured performance
-counter information.
+The Streamline profiler can collect and present application software profiling
+information alongside sample-based hardware performance counter data from both
+Arm CPUs and GPUs. Streamline has an *annotations* feature which allows the
+application being profiled to emit additional information that can be displayed
+alongside the other captured performance information.
 
 Installation
 ------------
@@ -63,9 +64,9 @@ object, such as:
 
 ### Channels
 
-Channels are custom event timelines associated with a thread. When a channel
-has been created, you can place annotations within it. Like a marker, an
-annotation has a text label and a color, but unlike markers they span a range
+Channels are custom event timelines associated with a software thread. When a
+channel has been created, you can place annotations within it. A channel
+annotation has a text label and a color but, unlike markers, they span a range
 of time.
 
 To create a channel:
@@ -75,23 +76,21 @@ To create a channel:
 Annotations can be inserted into a channel easily:
 
     channel.annotate("NPC AI", Color.red);
-
-    // ...do work...
-
+    // Do work ...
     channel.end();
 
 ### Counters
 
 Counters are numerical data points that can be plotted as a chart in the
 Streamline timeline view. Counters can be created as either absolute counters,
-where every value is an absolute value, or as a delta counter, where values
-are the difference since the last value was emitted. All values are floats
-and will be presented to 2 decimal places.
+where every value is an absolute value, or as a delta counter, where values are
+the number of instances of an event since the last value was emitted. All
+values are floats and will be presented to 2 decimal places.
 
 When charts are first defined the user can specify two strings, a title and
-series name. The title names the chart, the series names the series on the
-chart. Multiple series can use the same title name, which will mean that they
-will be plotted on the same chart in the Streamline timeline.
+series name. The title names the chart, the series names the data series.
+Multiple counter series can use the same title, which means that they will be
+plotted on the same chart in the Streamline timeline.
 
 To create a counter, e.g.:
 
@@ -104,47 +103,53 @@ Counter values are set easily:
 
 ### Custom Activity Maps
 
-Custom Activity Maps (CAMs) are a global (not per-thread) set of timelines.
-Each CAM appears as its own view in the lower half of Streamline's UI, so each
-CAM has a name, and consists of several tracks, each of which appears as a
-named row in the CAM. Activity is logged into a track by registering jobs into
-it.
+Custom Activity Map (CAM) views allow execution information to be plotted on
+a hierarchical set of timelines. Like channel annotations, CAM views plot Jobs
+on tracks, but unlike channel annotations, CAM views are not associated with a
+specific thread. CAM Jobs can also be linked by dependency lines, allowing
+control flow between them to be visualized.
 
-To create a CAM:
+To create a CAM view:
 
     gameCAM = new MobileStudio.Annotations.CAM("Game Activity");
 
 To add tracks to the CAM:
 
-    aiTrack = gameCAM.createTrack("AI Activity");
-    terrainTrack = gameCAM.createTrack("Terrain Generation Activity");
-    windTrack = gameCAM.createTrack("Wind Activity");
+    // Create root tracks in the view
+    aiTrack = gameCAM.createTrack("AI activity");
+    terrainTrack = gameCAM.createTrack("Terrain generation");
 
-After you have created a CAM and added tracks to it, register a job within a
-track using one of the following methods. The first is to create the job just
-as you start to undertake the activity you want to associate with it, and end
-the job when you are done, like you did with Annotations:
+    // Create a nested track inside another track
+    windTrack = terrainTrack.createTrack("Wind activity");
+
+To create a job within a track, there are two methods. The first is an
+immediate-mode API which starts a job when it is created, and stops it when
+the job's `stop()` method is called.
+
 
     job = aiTrack.makeJob("NPC AI", Color.blue);
-
-    // ...do work...
-
+    // Do work ...
     job.stop();
 
 The other method is to store the start and end times of your work, and then
-later add them to the track:
+add them to the track later.
 
-    UInt64 startTime = MobileStudio.Annotations.getTime();
+    // Run the work
+    startTime = MobileStudio.Annotations.getTime();
+    // Do work ...
+    endTime = MobileStudio.Annotations.getTime();
 
-    // ...do work...
-
-    UInt64 endTime = MobileStudio.Annotations.getTime();
-
+    // Register the work done earlier
     aiTrack.registerJob("NPC AI", Color.blue, startTime, endTime);
 
-The advantage of this second approach is that the getTime() method is very
+The advantage of this second approach is that the `getTime()` method is very
 cheap in terms of CPU cycles, and can also be safely invoked from jobs running
 within the Unity Job Scheduler.
+
+To allow dependencies between Jobs to be expressed, both `makeJob()` and
+`registerJob()` accept an optional list of `CAMJob` objects, which indicate the
+producers that the new Job consumes from. Dependency links will be shown in the
+Streamline visualization.
 
 Further Reading
 ---------------
@@ -152,8 +157,8 @@ Further Reading
 If you'd like to know more or raise any questions, please see the Mobile Studio
 developer pages at:
 
-https://developer.arm.com/mobile-studio
+  * https://developer.arm.com/mobile-studio
 
 Community support is available from Arm's Graphics and Multimedia forum at:
 
-https://community.arm.com/developer/tools-software/graphics/f/discussions
+  * https://community.arm.com/support-forums/f/graphics-gaming-and-vr-forum
