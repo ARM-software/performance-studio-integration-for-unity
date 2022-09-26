@@ -33,6 +33,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -100,13 +101,13 @@ namespace MobileStudio
         [DllImport("mobilestudio")]
         private static extern void gator_cam_job_set_dependencies(
             UInt32 view_uid, UInt32 job_uid, UInt64 time,
-            UInt32 primary_dependency, int dependency_count, [In, Out] UInt32[] dependencies);
+            UInt32 primary_dependency, UInt32 dependency_count, [In, Out] UInt32[] dependencies);
 
         [DllImport("mobilestudio")]
         private static extern void gator_cam_job(
             UInt32 view_uid, UInt32 job_uid, string name, UInt32 track, UInt64 startTime,
-            UInt64 duration, UInt32 color, UInt32 primaryDependency, IntPtr dependencyCount,
-            IntPtr dependencies);
+            UInt64 duration, UInt32 color, UInt32 primary_dependency, UInt32 dependency_count,
+            [In, Out] UInt32[] dependencies);
 
         [DllImport("mobilestudio")]
         private static extern void gator_annotate_counter(
@@ -119,7 +120,6 @@ namespace MobileStudio
         [DllImport("mobilestudio")]
         private static extern void gator_annotate_counter_value(
             UInt32 cpu, UInt32 counter_id, Int64 value);
-
 #endif
 
         /*
@@ -377,33 +377,32 @@ namespace MobileStudio
              */
             public interface CAMTrack
             {
-
                 /*
-                * Creates a track with the specified name and parent. This can then be used
-                * to register Jobs. Each Track appears as a named row in the
-                * parent CAM.
-                */
-                CAMTrack createTrack(string _name);
-
-                /*
-                 * Creates a CAMJob object, which will mark itself as starting
-                 * immediately. Mark completion with a call to stop() on the
-                 * resulting CAMJob.
+                 * Creates a track with this track as its parent.
                  */
-                CAMJob makeJob(string _name, Color32 color);
+                CAMTrack createTrack(string name);
 
-                /*
-                 * Register a job with the specified start and stop times. This
-                 * is useful if you are unable to register jobs as they happen,
-                 * for example when they are created as part of a job running in
-                 * the Unity Job Scheduler.
+                /**
+                 * Creates an immediate-mode \c CAMJob with dependencies.
+                 *
+                 * This Job will be marked as starting immediately, and the caller must mark
+                 * completion with a call to \c stop() on the returned \c CAMJob.
                  */
-                void registerJob(string name, Color32 color, UInt64 startTime, UInt64 stopTime);
+                CAMJob makeJob(string name, Color32 color, List<CAMJob> dependencies=null);
+
+                /**
+                 * Registers a deferred-mode \c CAMJob with dependencies.
+                 *
+                 * This Job will use the caller-provided start and stop times. This is useful if you
+                 * are unable to register jobs as they happen, for example when they are created as
+                 * part of a job running in the Unity Job Scheduler.
+                 */
+                CAMJob registerJob(string name, Color32 color, UInt64 startTime, UInt64 stopTime, List<CAMJob> dependencies=null);
 
                 /*
                  * Get the UID of this track.
                  */
-                UInt32 get_uid();
+                UInt32 getUid();
             }
 
             /*
@@ -417,14 +416,9 @@ namespace MobileStudio
                 void stop();
 
                 /*
-                 * Registers another job as a producer, the output of which is consumed by this job.
-                 */
-                void set_dependency(CAMJob producer);
-
-                /*
                  * Get the UID of this job.
                  */
-                UInt32 get_uid();
+                UInt32 getUid();
             }
 
 
@@ -461,18 +455,16 @@ namespace MobileStudio
                 #endif
             }
 
-            /*
-             * Creates a track with the specified name. This can then be used
-             * to register Jobs. Each Track appears as a named row in the
-             * parent CAM.
+            /**
+             * Creates a track as a root track in the CAM view.
              */
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public CAMTrack createTrack(string _name)
+            public CAMTrack createTrack(string name)
             {
                 CAMTrack newTrack;
                 lock(_locker)
                 {
-                    newTrack = new CAMTrackImp(this, _name, ++trackCount);
+                    newTrack = new CAMTrackImp(this, name, ++trackCount);
                 }
                 return newTrack;
             }
@@ -489,9 +481,9 @@ namespace MobileStudio
                 private UInt32 trackUid;
 
                 /*
-                 * Create a track with the root view as the parent.
+                 * Create a track.
                  */
-                public CAMTrackImp(CAM view, String name, UInt32 trackUid)
+                public CAMTrackImp(CAM view, String name, UInt32 trackUid, CAMTrack parent=null)
                 {
                     this.view = view;
                     this.trackUid = trackUid;
@@ -499,93 +491,65 @@ namespace MobileStudio
                     #if UNITY_ANDROID && !UNITY_EDITOR
                         if (state == AnnotationState.Active)
                         {
-                            gator_cam_track(view.viewUid, this.trackUid, 0xffffffff, name);
+                            if (parent != null)
+                            {
+                                gator_cam_track(view.viewUid, this.trackUid, parent.getUid(), name);
+                            }
+                            else
+                            {
+                                gator_cam_track(view.viewUid, this.trackUid, 0xffffffff, name);
+                            }
                         }
                     #endif
                 }
 
-                 /*
-                 * Create a track with another track as the parent.
-                 */
-                public CAMTrackImp(CAM view, CAMTrack parent, String name, UInt32 trackUid)
-                {
-                    this.view = view;
-                    this.trackUid = trackUid;
-
-                    #if UNITY_ANDROID && !UNITY_EDITOR
-                        if (state == AnnotationState.Active)
-                        {
-                            gator_cam_track(view.viewUid, this.trackUid, parent.get_uid(), name);
-                        }
-                    #endif
-                }
-
-                /*
-                 * Get the UID of this track;
-                 */
+                /* See CAMTrack interface for documentation. */
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public UInt32 get_uid()
+                public UInt32 getUid()
                 {
                     return this.trackUid;
                 }
 
-                /*
-                * Creates a track with the specified name and parent. This can then be used
-                * to register Jobs. Each Track appears as a named row in the
-                * parent CAM.
-                */
+                /* See CAMTrack interface for documentation. */
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public CAMTrack createTrack(string _name)
+                public CAMTrack createTrack(string name)
                 {
                     CAMTrack newTrack;
                     lock(_locker)
                     {
-                        newTrack = new CAMTrackImp(this.view, this, _name, ++view.trackCount);
+                        newTrack = new CAMTrackImp(this.view, name, ++view.trackCount, this);
                     }
                     return newTrack;
                 }
 
-                /*
-                 * Creates a CAMJob object, which will mark itself as starting
-                 * immediately. Mark completion with a call to stop() on the
-                 * resulting CAMJob.
-                 */
+                /* See CAMTrack interface for documentation. */
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public CAMJob makeJob(string _name, Color32 color)
+                public CAMJob makeJob(string name, Color32 color, List<CAMJob> dependencies=null)
                 {
                     UInt32 intColor = colorToGatorInt(color);
 
                     CAMJob newJob;
                     lock(_locker)
                     {
-                        newJob = new CAMJobImp(view, trackUid, view.jobCount++, _name, intColor);
+                        newJob = new CAMJobImp(view, trackUid, view.jobCount++, name, intColor, dependencies);
                     }
+
                     return newJob;
                 }
 
-                /*
-                 * Register a job with the specified start and stop times. This
-                 * is useful if you are unable to register jobs as they happen,
-                 * for example when they are created as part of a job running in
-                 * the Unity Job Scheduler.
-                 */
+                /* See CAMJob interface for documentation. */
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public void registerJob(string name, Color32 color, UInt64 startTime, UInt64 stopTime)
+                public CAMJob registerJob(string name, Color32 color, UInt64 startTime, UInt64 stopTime, List<CAMJob> dependencies=null)
                 {
-                    UInt32 jobUid;
+                    UInt32 intColor = colorToGatorInt(color);
+
+                    CAMJob newJob;
                     lock (_locker)
                     {
-                        jobUid = view.jobCount++;
+                        newJob = new CAMJobImp(view, trackUid, view.jobCount++, name, intColor, startTime, stopTime, dependencies);
                     }
 
-                    #if UNITY_ANDROID && !UNITY_EDITOR
-                        if (state == AnnotationState.Active)
-                        {
-                            // TODO: Return dummy CAMJob so we can use it to set deps
-                            UInt32 intColor = colorToGatorInt(color);
-                            gator_cam_job(view.viewUid, jobUid, name, trackUid, startTime, stopTime - startTime, intColor, 0xffffffff, new System.IntPtr(0), new System.IntPtr(0));
-                        }
-                    #endif
+                    return newJob;
                 }
             }
 
@@ -597,7 +561,6 @@ namespace MobileStudio
                 // These are all maintained by the CAM and the Track.
                 private UInt32 viewUid;
                 private UInt32 jobUid;
-                private UInt32 trackUid;
 
                 /*
                  * Retrieves the existing time and uses it to register the start
@@ -605,52 +568,82 @@ namespace MobileStudio
                  * register a job after the fact, use Track.registerJob() to
                  * register a Job with a specific start and end time.
                  */
-                public CAMJobImp(CAM view, UInt32 trackUid, UInt32 jobUid, string name, UInt32 color)
+                public CAMJobImp(CAM view, UInt32 trackUid, UInt32 jobUid, string name, UInt32 color, List<CAMJob> dependencies)
                 {
                     this.viewUid = view.viewUid;
                     this.jobUid = jobUid;
-                    this.trackUid = trackUid;
+
 
                     #if UNITY_ANDROID && !UNITY_EDITOR
                         if (state == AnnotationState.Active)
                         {
                             UInt64 startTime = gator_get_time();
-                            gator_cam_job_start(this.viewUid, this.jobUid, name, this.trackUid, startTime, color);
+                            gator_cam_job_start(this.viewUid, this.jobUid, name, trackUid, startTime, color);
+
+                            if (dependencies != null)
+                            {
+                                // Create the dependencies list
+                                int depCount = dependencies.Count;
+                                UInt32[] depsList = new UInt32[depCount];
+
+                                int i = 0;
+                                foreach (CAMJob job in dependencies)
+                                {
+                                    depsList[i] = job.getUid();
+                                    i++;
+                                }
+
+                                gator_cam_job_set_dependencies(this.viewUid, this.jobUid, startTime, 0xFFFFFFFF, (UInt32)depCount, depsList);
+                            }
                         }
+
                     #endif
                 }
 
                 /*
-                 * Get the UID of this Job.
+                 * Retrieves the existing time and uses it to register the start
+                 * of a job. Finish it with a call to stop(). If you want to
+                 * register a job after the fact, use Track.registerJob() to
+                 * register a Job with a specific start and end time.
                  */
+                public CAMJobImp(CAM view, UInt32 trackUid, UInt32 jobUid, string name, UInt32 color, UInt64 startTime, UInt64 stopTime, List<CAMJob> dependencies)
+                {
+                    this.viewUid = view.viewUid;
+                    this.jobUid = jobUid;
+
+                    #if UNITY_ANDROID && !UNITY_EDITOR
+                        if (state == AnnotationState.Active)
+                        {
+                            if (dependencies == null)
+                            {
+                                gator_cam_job(view.viewUid, jobUid, name, trackUid, startTime, stopTime - startTime, color, 0xffffffff, 0, null);
+                            }
+                            else
+                            {
+                                int depCount = dependencies.Count;
+                                UInt32[] depsList = new UInt32[depCount];
+
+                                int i = 0;
+                                foreach (CAMJob job in dependencies)
+                                {
+                                    depsList[i] = job.getUid();
+                                    i++;
+                                }
+
+                                gator_cam_job(view.viewUid, jobUid, name, trackUid, startTime, stopTime - startTime, color, 0xffffffff, (UInt32)depCount, depsList);
+                            }
+                        }
+                    #endif
+                }
+
+                /* See CAMJob interface for documentation. */
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public UInt32 get_uid()
+                public UInt32 getUid()
                 {
                     return this.jobUid;
                 }
 
-                /*
-                 * Set up a dependency between two jobs.
-                 */
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public void set_dependency(CAMJob producer)
-                {
-                    #if UNITY_ANDROID && !UNITY_EDITOR
-                        if (state == AnnotationState.Active)
-                        {
-                            UInt64 depTime = gator_get_time();
-                            UInt32[] depsList = new UInt32[1] { producer.get_uid() };
-                            gator_cam_job_set_dependencies(this.viewUid, this.jobUid, depTime, 0xFFFFFFFF, 1, depsList);
-                        }
-                    #endif
-                }
-
-                /*
-                 * Marks the end of a Job, using the current time as the end
-                 * time. If you want to register a job after the fact, use
-                 * Track.registerJob() to register a Job with a specific start
-                 * and end time.
-                 */
+                /* See CAMJob interface for documentation. */
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public void stop()
                 {
