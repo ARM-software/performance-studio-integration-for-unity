@@ -266,7 +266,7 @@ namespace MobileStudio
              */
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [Conditional("UNITY_ANDROID")]
-            public void set_value(float value)
+            public void setValue(float value)
             {
                 #if UNITY_ANDROID && !UNITY_EDITOR
                     if (state == AnnotationState.Active)

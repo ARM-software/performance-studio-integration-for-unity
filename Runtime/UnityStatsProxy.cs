@@ -223,7 +223,7 @@ namespace MobileStudio
             {
                 var value = counters[i].unityCounter.CurrentValueAsDouble;
                 float valueToReport = counters[i].convertToMiB ? (float)(value * toMiB) : (float)value;
-                counters[i].mobileStudioCounter.set_value(valueToReport);
+                counters[i].mobileStudioCounter.setValue(valueToReport);
             }
         }
     }

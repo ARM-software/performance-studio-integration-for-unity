@@ -99,7 +99,7 @@ To create a counter, e.g.:
 
 Counter values are set easily:
 
-    counter.set_value(42.2f);
+    counter.setValue(42.2f);
 
 ### Custom Activity Maps
 
