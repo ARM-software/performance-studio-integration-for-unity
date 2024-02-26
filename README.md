@@ -1,22 +1,25 @@
-Mobile Studio Package
-======================
+Performance Studio Package
+==========================
 
-This project is a Unity package for integrating the Mobile Studio tool suite
-into game development workflows. This version of the package has the following
-features for integrating with the Streamline profiler.
+This project is a Unity package for integrating the Performance Studio tool
+suite into game development workflows. This version of the package has the
+following features for integrating with the Streamline profiler.
 
 * C# language bindings for emitting event annotations.
 * C# language bindings for emitting software counters.
 
+> **Note:** Performance Studio was formerly known as Mobile Studio. For API
+> backwards compatibility the package continues to use the `MobileStudio` file
+> name prefix and C# namespace.
+
 License
 =======
 
-Most files in this library are licensed under the BSD-3 Clause License,
-provided in [LICENSE.md](LICENSE.md).
+Most files in this library are licensed under the BSD-3 Clause License (see
+[LICENSE.md](LICENSE.md)).
 
 The Unity native plugin interface header, `IUnityInterface.h`, is licensed
-under the Unity Companion License, provided in
-[LICENSE_UNITY.md](LICENSE_UNITY.md).
+under the Unity Companion License (see [LICENSE_UNITY.md](LICENSE_UNITY.md)).
 
 Technical details
 =================
@@ -32,8 +35,8 @@ Building
 
 This package is built using the Unity bee compiler.
 
-1) Set the environment variable `ANDROID_NDK_ROOT`
-   to a local Android NDK install. Android NDK can usually be found in:
+1) Set the environment variable `ANDROID_NDK_ROOT` to a local Android NDK
+   install. Android NDK can usually be found in:
    `\Editor\Data\PlaybackEngines\AndroidPlayer\NDK`.
 2) Locate the bee compiler in your Unity install. It is usually found in:
    `\Editor\Data\il2cpp\build\BeeSettings\offline\bee.exe`.
@@ -51,7 +54,8 @@ Installing and using
 --------------------
 
 For instructions on how to install and use this package, see the
-[full documentation page](Documentation/Mobile-Studio.md).
+[full documentation page](Documentation/Performance-Studio.md).
 
+- - -
 
-
+_Copyright © 2021-2024, Arm Limited and contributors. All rights reserved._
